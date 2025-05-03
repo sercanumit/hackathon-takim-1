@@ -6,6 +6,9 @@ import string
 load_dotenv()
 
 class Config:
+    # Database settings
+    DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./test.db")
+
     # JWT settings
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", 
                               "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(32)))

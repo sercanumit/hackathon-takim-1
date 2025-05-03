@@ -3,3 +3,6 @@ uvicorn
 python-jose[cryptography]
 bcrypt
 python-dotenv
+SQLAlchemy
+aiosqlite
+pydantic[email]
