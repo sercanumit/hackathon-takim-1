@@ -1,27 +1,16 @@
-from datetime import datetime, timedelta, timezone
-from jose import jwt, JWTError
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from typing import Dict, Optional
-import bcrypt
+from jose import jwt, JWTError
+from typing import Optional
 from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import TokenData, OrmUser, User as PydanticUser
-from config import Config
-from app.dependencies import get_db_session
-
-SECRET_KEY = Config.JWT_SECRET_KEY
-ALGORITHM = Config.JWT_ALGORITHM
-ACCESS_TOKEN_EXPIRE_MINUTES = Config.JWT_ACCESS_TOKEN_EXPIRE_MINUTES
+from app.models import TokenData, OrmUser
+from app.core.dependencies import get_db_session
+from app.auth.utils import verify_password
+from app.auth.jwt import SECRET_KEY, ALGORITHM
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
-
-def get_password_hash(password: str) -> str:
-    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
-
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return bcrypt.checkpw(plain_password.encode(), hashed_password.encode())
 
 async def get_user(db: AsyncSession, username: str) -> Optional[OrmUser]:
     """Fetches a user from the database by username using ORM."""
@@ -36,16 +25,6 @@ async def authenticate_user(db: AsyncSession, username: str, password: str) -> O
     if not verify_password(password, user.hashed_password):
         return None
     return user
-
-def create_access_token(data: dict, expires_delta: timedelta | None = None):
-    to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
-    else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=15)
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
 
 async def get_current_user(
     token: str = Depends(oauth2_scheme),

@@ -6,7 +6,7 @@ from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession 
 
 from app.models import UserCreate, User, Token, OrmUser
-from app.dependencies import get_db_session
+from app.core.dependencies import get_db_session 
 from app.auth import (
     authenticate_user,
     create_access_token,
@@ -24,7 +24,7 @@ router = APIRouter(
 @router.post("/register", response_model=User)
 async def register_user(
     user: UserCreate,
-    db: AsyncSession = Depends(get_db_session) # Add session dependency
+    db: AsyncSession = Depends(get_db_session) 
 ):
     #
     existing_user = await get_user(db, user.username)

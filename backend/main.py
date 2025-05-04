@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 from app.routers import auth
-from app.database import engine, metadata
+from app.core.database import engine, metadata  
 
 # Define the lifespan context manager
 @asynccontextmanager
