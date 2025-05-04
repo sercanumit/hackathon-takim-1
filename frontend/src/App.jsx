@@ -9,6 +9,7 @@ import Login from "./pages/Login";
 import ScrollToTop from "./components/ScrollToTop";
 import Navbar from "./components/Navbar";
 import ProtectedRoute from "./components/ProtectedRoute";
+import PopularStoriesPage from "./pages/PopularStoriesPage";
 
 function App() {
   const [theme, toggleTheme] = useDarkMode();
@@ -38,6 +39,7 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route path="/stories/popular" element={<PopularStoriesPage />} />
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
         </Routes>
