@@ -1,0 +1,257 @@
+from fastapi import HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+from sqlalchemy import func, desc, asc
+from sqlalchemy.orm import selectinload
+
+from app.models import OrmStory, OrmTag, OrmUser
+
+async def get_story_by_id(
+    story_id: int, 
+    db: AsyncSession, 
+    include_liked_by: bool = False,
+    include_disliked_by: bool = False 
+):
+    """Get a story by its ID with optional relationship loading"""
+    query = select(OrmStory).where(OrmStory.id == story_id)
+    
+    options_to_load = []
+    if include_liked_by:
+        options_to_load.append(selectinload(OrmStory.liked_by))
+    if include_disliked_by:
+        options_to_load.append(selectinload(OrmStory.disliked_by))
+        
+    if options_to_load:
+        query = query.options(*options_to_load)
+        
+    result = await db.execute(query)
+    story = result.scalar_one_or_none()
+    
+    if not story:
+        raise HTTPException(status_code=404, detail="Story not found")
+    return story
+
+async def get_stories_with_filter(
+    db: AsyncSession,
+    filter_condition,
+    sort_column=OrmStory.created_at,
+    sort_direction=desc,
+    limit: int = 10,
+    offset: int = 0
+):
+    """Helper function to get stories with filtering and sorting"""
+    count_query = select(func.count()).select_from(OrmStory).where(filter_condition)
+    total_result = await db.execute(count_query)
+    total = total_result.scalar_one()
+    
+    query = (
+        select(OrmStory)
+        .options(selectinload(OrmStory.author), selectinload(OrmStory.tags))
+        .where(filter_condition)
+        .order_by(sort_direction(sort_column))
+        .limit(limit)
+        .offset(offset)
+    )
+    result = await db.execute(query)
+    stories = result.scalars().all()
+    
+    return total, stories
+
+async def create_new_story(db: AsyncSession, story_data, author_id: int):
+    """Create a new story with associated tags"""
+    new_story = OrmStory(
+        title=story_data.title,
+        image=story_data.image,
+        description=story_data.description,
+        content=story_data.content,
+        category=story_data.category,
+        is_interactive=story_data.is_interactive,
+        age_group=story_data.age_group,
+        author_id=author_id
+    )
+    
+    db.add(new_story)
+    await db.commit()
+    
+    tags_added = False
+    if hasattr(story_data, "tags") and story_data.tags:
+        for tag_name in story_data.tags:
+            result = await db.execute(
+                select(OrmTag).where(OrmTag.name == tag_name)
+            )
+            tag = result.scalar_one_or_none()
+            
+            if not tag:
+                tag = OrmTag(name=tag_name)
+                db.add(tag)
+                await db.flush()
+            
+            new_story.tags.append(tag)
+            tags_added = True
+    
+    if tags_added:
+        await db.commit()
+    
+    await db.refresh(new_story, ['tags', 'author'])
+    
+    result = await db.execute(
+        select(OrmStory)
+        .options(selectinload(OrmStory.tags), selectinload(OrmStory.author))
+        .where(OrmStory.id == new_story.id)
+    )
+    loaded_story = result.scalar_one()
+    
+    return loaded_story
+
+async def update_existing_story(db: AsyncSession, story_id: int, story_data, user_id: int):
+    """Update an existing story"""
+    story = await get_story_by_id(story_id, db)
+    
+    if story.author_id != user_id:
+        raise HTTPException(
+            status_code=403,
+            detail="You don't have permission to update this story"
+        )
+    
+    for field, value in story_data.dict(exclude_unset=True).items():
+        setattr(story, field, value)
+    
+    await db.commit()
+    
+    result = await db.execute(
+        select(OrmStory)
+        .options(selectinload(OrmStory.tags), selectinload(OrmStory.author))
+        .where(OrmStory.id == story_id)
+    )
+    updated_story = result.scalar_one_or_none()
+    
+    if not updated_story:
+        raise HTTPException(status_code=404, detail="Story not found after update")
+    
+    return updated_story
+
+async def delete_story_by_id(db: AsyncSession, story_id: int, user_id: int):
+    """Delete a story by its ID"""
+    story = await get_story_by_id(story_id, db)
+    
+    if story.author_id != user_id:
+        raise HTTPException(
+            status_code=403,
+            detail="You don't have permission to delete this story"
+        )
+    
+    await db.delete(story)
+    await db.commit()
+    
+    return None
+
+async def process_story_like(db: AsyncSession, story_id: int, user_id: int):
+    """Process like action for a story"""
+    story = await get_story_by_id(story_id, db, include_liked_by=True, include_disliked_by=True)
+    
+    user_in_liked_by = any(user.id == user_id for user in story.liked_by)
+    user_in_disliked_by = any(user.id == user_id for user in story.disliked_by)
+
+    # Get the current user
+    result = await db.execute(select(OrmUser).where(OrmUser.id == user_id))
+    current_user = result.scalar_one_or_none()
+    
+    if not current_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if user_in_liked_by:
+        # If already liked, remove like (toggle off)
+        story.liked_by = [user for user in story.liked_by if user.id != user_id]
+    else:
+        # Add like
+        story.liked_by.append(current_user)
+        # If previously disliked, remove dislike
+        if user_in_disliked_by:
+            story.disliked_by = [user for user in story.disliked_by if user.id != user_id]
+
+    # Update likes count
+    story.likes = len(story.liked_by) - len(story.disliked_by)
+    await db.commit()
+    
+    # Get updated story
+    result = await db.execute(
+        select(OrmStory)
+        .options(
+            selectinload(OrmStory.tags), 
+            selectinload(OrmStory.author), 
+            selectinload(OrmStory.liked_by), 
+            selectinload(OrmStory.disliked_by)
+        )
+        .where(OrmStory.id == story_id)
+    )
+    loaded_story = result.scalar_one_or_none()
+    
+    if not loaded_story:
+        raise HTTPException(status_code=404, detail="Story not found after like update")
+    
+    return loaded_story
+
+async def process_story_dislike(db: AsyncSession, story_id: int, user_id: int):
+    """Process dislike action for a story"""
+    story = await get_story_by_id(story_id, db, include_liked_by=True, include_disliked_by=True)
+    
+    user_in_liked_by = any(user.id == user_id for user in story.liked_by)
+    user_in_disliked_by = any(user.id == user_id for user in story.disliked_by)
+
+    # Get the current user
+    result = await db.execute(select(OrmUser).where(OrmUser.id == user_id))
+    current_user = result.scalar_one_or_none()
+    
+    if not current_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if user_in_disliked_by:
+        # If already disliked, remove dislike (toggle off)
+        story.disliked_by = [user for user in story.disliked_by if user.id != user_id]
+    else:
+        # Add dislike
+        story.disliked_by.append(current_user)
+        # If previously liked, remove like
+        if user_in_liked_by:
+            story.liked_by = [user for user in story.liked_by if user.id != user_id]
+
+    # Update likes count
+    story.likes = len(story.liked_by) - len(story.disliked_by)
+    await db.commit()
+    
+    # Get updated story
+    result = await db.execute(
+        select(OrmStory)
+        .options(
+            selectinload(OrmStory.tags), 
+            selectinload(OrmStory.author), 
+            selectinload(OrmStory.liked_by),
+            selectinload(OrmStory.disliked_by) 
+        )
+        .where(OrmStory.id == story_id)
+    )
+    loaded_story = result.scalar_one_or_none()
+    
+    if not loaded_story:
+        raise HTTPException(status_code=404, detail="Story not found after dislike update")
+    
+    return loaded_story
+
+async def increment_story_read_count(db: AsyncSession, story_id: int):
+    """Increment story read count and return the updated story"""
+    story = await get_story_by_id(story_id, db)
+    
+    story.read_count += 1
+    await db.commit()
+    
+    result = await db.execute(
+        select(OrmStory)
+        .options(selectinload(OrmStory.tags), selectinload(OrmStory.author))
+        .where(OrmStory.id == story_id)
+    )
+    loaded_story = result.scalar_one_or_none()
+    
+    if not loaded_story:
+        raise HTTPException(status_code=404, detail="Story not found after update")
+    
+    return loaded_story
