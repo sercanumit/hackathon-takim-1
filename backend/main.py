@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
-from app.routers import auth
+from app.routers import auth, stories
 from app.core.database import engine, metadata  
 
 # Define the lifespan context manager
@@ -32,6 +32,7 @@ app = FastAPI(
 )
 
 app.include_router(auth.router)
+app.include_router(stories.router)
 
 @app.get("/")
 def read_root():

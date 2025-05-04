@@ -2,12 +2,18 @@ import os
 from dotenv import load_dotenv
 import secrets
 import string
+from pathlib import Path
 
 load_dotenv()
 
 class Config:
-    # Database settings
-    DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./test.db")
+    # project base directory
+    BASE_DIR = Path(__file__).parent.absolute()
+    
+    DATABASE_URL = os.getenv(
+        "DATABASE_URL", 
+        f"sqlite+aiosqlite:///{BASE_DIR / 'app.db'}"
+    )
 
     # JWT settings
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", 
