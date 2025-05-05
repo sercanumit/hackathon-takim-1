@@ -4,8 +4,13 @@ from sqlalchemy.future import select
 from sqlalchemy import func, desc, asc
 from sqlalchemy.orm import selectinload
 import json
+import logging # Import logging
 
 from app.models import OrmStory, OrmTag, OrmUser, Page
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 async def get_story_by_id(
     story_id: int, 
@@ -36,9 +41,28 @@ async def get_story_by_id(
         if story.content:
             try:
                 content_data = json.loads(story.content)
-                story.content = [Page(**page) for page in content_data]
-            except (json.JSONDecodeError, TypeError):
-                story.content = [Page(text=story.content)]
+                if isinstance(content_data, list):
+                    deserialized_pages = []
+                    for page_dict in content_data:
+                        try:
+                            # Ensure page_dict is a dictionary before attempting ** unpacking
+                            if isinstance(page_dict, dict):
+                                deserialized_pages.append(Page(**page_dict))
+                            else:
+                                logger.warning(f"Skipping invalid page data (not a dict) in story {story.id}: {page_dict}")
+                                # Optionally append a default/error page or skip
+                        except TypeError as page_err:
+                            logger.error(f"Error deserializing page data in story {story.id}: {page_err} - Data: {page_dict}")
+                            # Optionally append a default/error page
+                    story.content = deserialized_pages
+                else:
+                    # Handle case where content is a single string (legacy or error)
+                    logger.warning(f"Story {story.id} content is not a list, treating as single text page: {story.content}")
+                    story.content = [Page(text=str(content_data))]
+            except (json.JSONDecodeError, TypeError) as e:
+                logger.error(f"Error decoding story content for story {story.id}: {e} - Content: {story.content}")
+                # Fallback to prevent crashes, maybe show raw content or an error message
+                story.content = [Page(text="Error loading content")]
         else:
             story.content = []
             
@@ -71,62 +95,94 @@ async def get_stories_with_filter(
     return total, stories
 
 async def create_new_story(db: AsyncSession, story_data, author_id: int):
-    """Create a new story with associated tags"""
+    """Create a new story with associated tags within a single transaction."""
     content_json = json.dumps([page.dict(exclude_none=True) for page in story_data.content])
-    
+
     new_story = OrmStory(
         title=story_data.title,
         image=story_data.image,
         description=story_data.description,
-        content=content_json,  # Store as JSON string
+        content=content_json,
         category=story_data.category,
         is_interactive=story_data.is_interactive,
         age_group=story_data.age_group,
         author_id=author_id
     )
-    
-    db.add(new_story)
-    await db.commit()
-    
-    tags_added = False
+
+    # Prepare tags before adding the story to the session
+    tags_to_associate = []
     if hasattr(story_data, "tags") and story_data.tags:
-        for tag_name in story_data.tags:
-            result = await db.execute(
-                select(OrmTag).where(OrmTag.name == tag_name)
-            )
-            tag = result.scalar_one_or_none()
-            
-            if not tag:
-                tag = OrmTag(name=tag_name)
-                db.add(tag)
-                await db.flush()
-            
-            new_story.tags.append(tag)
-            tags_added = True
-    
-    if tags_added:
+        unique_tag_names = list(set(story_data.tags))
+        
+        # Fetch existing tags
+        existing_tags_result = await db.execute(
+            select(OrmTag).where(OrmTag.name.in_(unique_tag_names))
+        )
+        existing_tags = {tag.name: tag for tag in existing_tags_result.scalars()}
+        
+        tags_to_associate.extend(existing_tags.values())
+
+        # Identify and create new tags
+        for tag_name in unique_tag_names:
+            if tag_name not in existing_tags:
+                new_tag = OrmTag(name=tag_name)
+                db.add(new_tag) # Add new tag to session
+                tags_to_associate.append(new_tag) # Add the new ORM object
+
+    # Add the story to the session
+    db.add(new_story)
+
+    # Flush to assign IDs before association (optional but can help)
+    # await db.flush() # Try with and without this flush if issues persist
+
+    # Associate tags *before* commit
+    if tags_to_associate:
+        new_story.tags.extend(tags_to_associate)
+
+    # Commit everything at once
+    try:
         await db.commit()
-    
-    await db.refresh(new_story, ['tags', 'author'])
-    
-    result = await db.execute(
+    except Exception as e:
+        await db.rollback() # Rollback on error
+        raise HTTPException(status_code=500, detail=f"Database commit error: {str(e)}")
+
+    # Fetch the final story with relationships eagerly loaded for the response
+    # Use the committed story's ID
+    final_result = await db.execute(
         select(OrmStory)
         .options(selectinload(OrmStory.tags), selectinload(OrmStory.author))
         .where(OrmStory.id == new_story.id)
     )
-    loaded_story = result.scalar_one()
-    
-    # Convert JSON
+    loaded_story = final_result.scalar_one_or_none() # Use scalar_one_or_none for safety
+
+    if not loaded_story:
+         # This shouldn't happen if commit succeeded, but handle defensively
+         raise HTTPException(status_code=404, detail="Story not found after creation commit")
+
+    # Deserialize content for the response model
     if loaded_story.content:
         try:
             content_data = json.loads(loaded_story.content)
-            loaded_story.content = [Page(**page) for page in content_data]
-        except (json.JSONDecodeError, TypeError):
-            # Handle legacy content or invalid JSON
-            loaded_story.content = [Page(text=loaded_story.content)]
+            if isinstance(content_data, list):
+                 deserialized_pages = []
+                 for page_dict in content_data:
+                     try:
+                         if isinstance(page_dict, dict):
+                             deserialized_pages.append(Page(**page_dict))
+                         else:
+                             logger.warning(f"Skipping invalid page data (not a dict) post-creation in story {loaded_story.id}: {page_dict}")
+                     except TypeError as page_err:
+                         logger.error(f"Error deserializing page data post-creation in story {loaded_story.id}: {page_err} - Data: {page_dict}")
+                 loaded_story.content = deserialized_pages
+            else:
+                 logger.warning(f"Story {loaded_story.id} content (post-creation) is not a list: {loaded_story.content}")
+                 loaded_story.content = [Page(text=str(content_data))]
+        except (json.JSONDecodeError, TypeError) as e:
+            logger.error(f"Error decoding story content after creation for story {loaded_story.id}: {e}")
+            loaded_story.content = [Page(text="Error loading content")]
     else:
         loaded_story.content = []
-    
+
     return loaded_story
 
 async def update_existing_story(db: AsyncSession, story_id: int, story_data, user_id: int):
@@ -263,37 +319,47 @@ async def process_story_dislike(db: AsyncSession, story_id: int, user_id: int):
 
 async def increment_story_read_count(db: AsyncSession, story_id: int):
     """Increment story read count and return the updated story"""
-    story = await get_story_by_id(story_id, db)
-    
-    # eğer list ise JSON string'e çevir
-    if isinstance(story.content, list):
-        story.content = json.dumps([
-            page.dict(exclude_none=True) if hasattr(page, "dict") else page 
-            for page in story.content
-        ])
-    
-    story.read_count += 1
-    await db.commit()
-    
-    
+    # Use selectinload to eagerly load relationships needed for the response *after* the update
     result = await db.execute(
         select(OrmStory)
-        .options(selectinload(OrmStory.tags), selectinload(OrmStory.author))
+        .options(selectinload(OrmStory.tags), selectinload(OrmStory.author)) # Eager load here
         .where(OrmStory.id == story_id)
     )
-    loaded_story = result.scalar_one_or_none()
-    
-    if not loaded_story:
-        raise HTTPException(status_code=404, detail="Story not found after update")
-    
-    # Deserialize JSON
-    if loaded_story.content:
+    story = result.scalar_one_or_none()
+
+    if not story:
+        raise HTTPException(status_code=404, detail="Story not found")
+
+    # Increment count
+    story.read_count += 1
+    db.add(story) # Mark as dirty
+    await db.commit() # Commit the change
+
+    # Refresh is likely not needed as we eager loaded, but can be kept for safety
+    # await db.refresh(story, ['tags', 'author']) # Re-fetches data
+
+    # Deserialize content
+    if story.content:
         try:
-            content_data = json.loads(loaded_story.content)
-            loaded_story.content = [Page(**page) for page in content_data]
-        except (json.JSONDecodeError, TypeError):
-            loaded_story.content = [Page(text=loaded_story.content)]
+            content_data = json.loads(story.content)
+            if isinstance(content_data, list):
+                deserialized_pages = []
+                for page_dict in content_data:
+                    try:
+                        if isinstance(page_dict, dict):
+                            deserialized_pages.append(Page(**page_dict))
+                        else:
+                            logger.warning(f"Skipping invalid page data (not a dict) after read increment in story {story.id}: {page_dict}")
+                    except TypeError as page_err:
+                        logger.error(f"Error deserializing page data after read increment in story {story.id}: {page_err} - Data: {page_dict}")
+                story.content = deserialized_pages
+            else:
+                logger.warning(f"Story {story.id} content (after read increment) is not a list: {story.content}")
+                story.content = [Page(text=str(content_data))]
+        except (json.JSONDecodeError, TypeError) as e:
+            logger.error(f"Error decoding story content after incrementing read count for story {story.id}: {e}")
+            story.content = [Page(text="Error loading content")]
     else:
-        loaded_story.content = []
-    
-    return loaded_story
+        story.content = []
+
+    return story

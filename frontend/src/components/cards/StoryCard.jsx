@@ -1,5 +1,10 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
+import { useCallback } from "react";
+import apiClient from "../../api/apiClient";
+
+// Get the base URL from the apiClient for image paths
+const BASE_URL = apiClient.defaults.baseURL || "http://localhost:8000";
 
 // Card animation variants
 const cardVariants = {
@@ -28,10 +33,28 @@ const formatDate = (dateString) => {
   return new Date(dateString).toLocaleDateString("tr-TR", options);
 };
 
+// Helper function to get complete image URL
+const getCompleteImageUrl = (imagePath) => {
+  if (!imagePath) return null;
+
+  // If it's already a complete URL, return it as is
+  if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
+    return imagePath;
+  }
+
+  // If it's a relative path, add the base URL
+  return `${BASE_URL}${imagePath.startsWith("/") ? "" : "/"}${imagePath}`;
+};
+
 const StoryCard = ({ story, featured = false }) => {
   if (!story) {
     return <div className="border border-red-500 p-4">Hikaye verisi yok!</div>;
   }
+
+  // Format the image URL properly
+  const imageUrl = story.image
+    ? getCompleteImageUrl(story.image)
+    : "https://placehold.co/600x400/EEE/31343C";
 
   return (
     <motion.div
@@ -45,17 +68,17 @@ const StoryCard = ({ story, featured = false }) => {
     >
       <div className="relative">
         <img
-          src={story.image || "https://placehold.co/600x400/EEE/31343C"} // Add fallback image
-          alt={story.title || "Hikaye Resmi"} // Add fallback alt text
+          src={imageUrl}
+          alt={story.title || "Hikaye Resmi"}
           className={`w-full object-cover ${
             featured ? "h-48 md:h-64" : "h-40"
           }`}
           onError={(e) => {
-            e.target.onerror = null;
+            e.target.onerror = null; // Prevent infinite error loop
             e.target.src =
               "https://placehold.co/600x400/EEE/31343C/png?text=Resim+Yok";
-          }} // Fallback image on error
-          loading="lazy" // Lazy load images
+          }}
+          loading="lazy"
         />
         {story.category && (
           <div className="absolute top-2 right-2 bg-purple-500 text-white text-xs px-2 py-1 rounded-full">

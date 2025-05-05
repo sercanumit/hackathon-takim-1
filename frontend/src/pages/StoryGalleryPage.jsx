@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import StoryCard from "../components/cards/StoryCard";
 import SkeletonCard from "../components/cards/SkeletonCard";
 import SectionTitle from "../components/ui/SectionTitle";
@@ -101,7 +102,7 @@ function StoryGalleryPage() {
           </h2>
           <p className="text-gray-700 dark:text-gray-300 mb-4">{error}</p>
           <button
-            className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+            className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 hover:cursor-pointer"
             onClick={() => window.location.reload()}
           >
             Retry
@@ -114,8 +115,8 @@ function StoryGalleryPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-10">
       <div className="container mx-auto px-4">
-        {/* Page Header */}
-        <div className="mb-10 text-center">
+        {/* Page Header - Modified to include Create Story button */}
+        <div className="mb-10 text-center relative">
           <motion.h1
             className="text-4xl md:text-5xl font-bold text-gray-800 dark:text-white mb-4"
             initial={{ opacity: 0, y: -20 }}
@@ -130,8 +131,43 @@ function StoryGalleryPage() {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5, delay: 0.2 }}
           >
-            Keşfetmeyi bekleyen binlerce interaktif hikaye arasından seçim yapın
+            Keşfetmeyi bekleyen birbirinden güzel eğitici hikayeler arasından
+            seçim yapın
           </motion.p>
+
+          {/* Create Story Button */}
+          <motion.div
+            className="mt-8"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+          >
+            <Link to="/stories/create">
+              <motion.button
+                className="px-8 py-3 bg-gradient-to-r from-purple-600 to-blue-500 hover:cursor-pointer hover:from-purple-700 hover:to-blue-600 text-white rounded-full font-medium shadow-lg flex items-center mx-auto"
+                whileHover={{
+                  scale: 1.05,
+                  boxShadow:
+                    "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+                }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 mr-2"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 3a1 1 0 00-1 1v5H4a1 1 0 100 2h5v5a1 1 0 102 0v-5h5a1 1 0 100-2h-5V4a1 1 0 00-1-1z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                Yeni Hikaye Oluştur
+              </motion.button>
+            </Link>
+          </motion.div>
         </div>
 
         {/* Featured Stories Section */}

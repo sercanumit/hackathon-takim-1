@@ -29,7 +29,7 @@ else:
 engine = create_async_engine(
     DATABASE_URL,
     connect_args=connect_args,
-    echo=True  # debug için true todo: kaldır
+    echo=False  # debug için true todo: kaldır
 )
 
 async_session_maker = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)

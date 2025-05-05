@@ -7,7 +7,7 @@ function StoryLandingPage() {
   const [activeTab, setActiveTab] = useState("çocuklar");
   const [animatedText, setAnimatedText] = useState("");
   const [currentCharacter, setCurrentCharacter] = useState(0);
-  const fullText = "Her seçim bir ders, her hikaye bir macera!";
+  const fullText = "Her hikaye bir öğreti, her okuma bir macera!";
   const [hoveredCard, setHoveredCard] = useState(null);
   const [showScrollIndicator, setShowScrollIndicator] = useState(true);
   const [theme] = useDarkMode();
@@ -40,9 +40,9 @@ function StoryLandingPage() {
 
   const featureCards = [
     {
-      title: "İnteraktif Hikayeler",
+      title: "Eğitici Hikayeler",
       description:
-        "Çocukların kararlarına göre değişen ve gelişen hikayelerle eğlenceli okuma deneyimi.",
+        "Çocuklar için hazırlanmış, eğitici ve öğretici hikayelerle zengin okuma deneyimi.",
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -169,9 +169,9 @@ function StoryLandingPage() {
             whileHover={{ scale: 1.05 }}
           >
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-yellow-200 to-white">
-              Çocukların Kararlarıyla
+              Çocuklar İçin Özel
               <br />
-              Şekillenen Hikayeler
+              Eğitici Hikayeler
             </span>
           </motion.h1>
 
@@ -192,7 +192,7 @@ function StoryLandingPage() {
             transition={{ delay: 1, duration: 0.8 }}
           >
             <motion.button
-              className="group px-8 py-4 bg-yellow-400 hover:bg-yellow-500 text-gray-800 rounded-full font-bold text-lg shadow-lg cursor-pointer"
+              className="group px-8 py-4 bg-yellow-300 hover:bg-yellow-400 text-gray-800 rounded-full font-bold text-lg shadow-lg cursor-pointer"
               whileHover={{
                 scale: 1.05,
                 boxShadow:
@@ -448,15 +448,15 @@ function StoryLandingPage() {
                       {step === 1
                         ? "Hikayeyi Seç"
                         : step === 2
-                        ? "Kararlar Ver"
+                        ? "Hikayeyi Oku"
                         : "Dersler Öğren"}
                     </h3>
                     <p className="text-lg text-gray-600 dark:text-gray-300">
                       {step === 1
-                        ? "Yaş grubuna ve ilgi alanına göre birçok hikaye arasından seçim yap. Kahramanını belirle ve maceraya başla!"
+                        ? "Yaş grubuna ve ilgi alanına göre birçok hikaye arasından seçim yap. Kahramanlarla tanış ve maceraya başla!"
                         : step === 2
-                        ? "Hikaye ilerledikçe karakterin kararlarını belirle ve sonuçları gör. Her seçimin farklı bir yolu açar!"
-                        : "Her kararın sonucunda değerli dersler ve hayat becerileri kazandıran içeriklerle karşılaş. Eğlenerek öğren!"}
+                        ? "Hikayenin akışında ilerle ve ilgi çekici karakterlerle tanış. Her hikaye özenle hazırlanmış içerikler sunar!"
+                        : "Her hikayeden değerli dersler ve hayat becerileri kazandıran içeriklerle karşılaş. Eğlenerek öğren!"}
                     </p>
                   </div>
                 </motion.div>
@@ -564,7 +564,7 @@ function StoryLandingPage() {
                           />
                         </svg>
                         <span className="text-lg text-gray-600 dark:text-gray-300">
-                          Karar verme becerilerini güçlendirir
+                          Okuma becerilerini güçlendirir
                         </span>
                       </li>
                       <li className="flex items-start">
@@ -758,7 +758,7 @@ function StoryLandingPage() {
             viewport={{ once: true, amount: 0.5 }}
           >
             <motion.button
-              className="group px-10 py-4 bg-yellow-400 hover:bg-yellow-500 text-gray-800 rounded-full font-bold text-xl shadow-lg cursor-pointer"
+              className="group px-10 py-4 bg-yellow-300 hover:bg-yellow-400 text-gray-800 rounded-full font-bold text-xl shadow-lg cursor-pointer"
               whileHover={{
                 scale: 1.05,
                 boxShadow:
@@ -787,12 +787,11 @@ function StoryLandingPage() {
                 </motion.svg>
               </span>
             </motion.button>
-            {/* "Tanıtımı İzle" button has been removed */}
           </motion.div>
         </motion.div>
       </section>
 
-      {/* Footer with team information, GitHub link, and MIT License */}
+      {/* Footer */}
       <footer className="py-16 bg-white dark:bg-gray-900 text-gray-800 dark:text-white">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
