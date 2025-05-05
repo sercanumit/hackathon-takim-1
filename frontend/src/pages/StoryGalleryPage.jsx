@@ -136,10 +136,7 @@ function StoryGalleryPage() {
 
         {/* Featured Stories Section */}
         <section className="mb-16">
-          <SectionTitle
-            title="Öne Çıkan Hikayeler"
-            viewAllLink="/stories/featured"
-          />
+          <SectionTitle title="Öne Çıkan Hikayeler" />
 
           {isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

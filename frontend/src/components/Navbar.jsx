@@ -11,7 +11,7 @@ function Navbar({
   setMobileMenuOpen,
 }) {
   return (
-    <nav className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 relative z-20">
+    <nav className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 relative z-100">
       <div className="container mx-auto px-4 py-3 md:py-4">
         {/* Desktop Navigation */}
         <div className="flex justify-between items-center">
