@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 from pydantic import BaseModel
 from sqlalchemy import String, Integer, Boolean, ForeignKey, Table, Column
@@ -83,6 +83,14 @@ class OrmStory(Base):
 
 # --- Pydantic Models ---
 
+# New Page model for structured content
+class Page(BaseModel):
+    text: Optional[str] = None
+    image: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
+
 class TagBase(BaseModel):
     name: str
     
@@ -110,7 +118,7 @@ class StoryBase(BaseModel):
         from_attributes = True
 
 class StoryCreate(StoryBase):
-    content: str
+    content: List[Page] = []
     is_interactive: bool = True
     age_group: str = "all"
     tags: List[str] = [] 
@@ -119,11 +127,11 @@ class StoryList(StoryBase):
     id: int
     likes: int
     category: str
-    published_date: datetime = datetime.utcnow()
+    published_date: datetime = datetime.now(timezone.utc)
     author: User
     
 class StoryDetail(StoryList):
-    content: str
+    content: List[Page] = []  # Changed from string to list of Page objects
     read_time: int
     read_count: int
     is_interactive: bool

@@ -1,12 +1,13 @@
 from fastapi import APIRouter, Depends, Query, status, UploadFile, File, HTTPException, Form
-from typing import Optional, Annotated
+from typing import Optional, Annotated, List, Dict
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import desc, asc
-from pydantic import TypeAdapter 
+from sqlalchemy import desc, asc, and_
+from pydantic import TypeAdapter, Json
+import json
 
 from app.core.dependencies import get_db_session
 from app.auth.dependencies import get_current_user
-from app.models import OrmStory, StoryDetail, StoriesResponse, OrmUser, StoryCreate, StoryBase
+from app.models import OrmStory, StoryDetail, StoriesResponse, OrmUser, StoryCreate, StoryBase, Page
 from app.services.story_service import (
     get_stories_with_filter, 
     create_new_story,
@@ -112,33 +113,35 @@ async def filter_stories(
     db: AsyncSession = Depends(get_db_session)
 ):
     """kriterlere göre hikayeleri filtrele"""
-    filter_condition = True
-    
+    filter_conditions = []
+
     if category:
-        filter_condition = filter_condition & (OrmStory.category == category)
-    
+        filter_conditions.append(OrmStory.category == category)
+
     if age_group:
-        filter_condition = filter_condition & (OrmStory.age_group == age_group)
-    
+        filter_conditions.append(OrmStory.age_group == age_group)
+
     if query:
         search_query = f"%{query}%"
-        filter_condition = filter_condition & (
-            (OrmStory.title.ilike(search_query)) | 
+        filter_conditions.append(
+            (OrmStory.title.ilike(search_query)) |
             (OrmStory.description.ilike(search_query))
         )
-    
+
+    combined_filter = and_(*filter_conditions) if filter_conditions else True
+
     if sort_by == "created_at":
         sort_column = OrmStory.created_at
     elif sort_by == "likes":
         sort_column = OrmStory.likes
     else:
         sort_column = OrmStory.read_count
-    
+
     sort_direction = desc if order == "desc" else asc
-    
+
     total, stories = await get_stories_with_filter(
         db,
-        filter_condition,
+        combined_filter,
         sort_column=sort_column,
         sort_direction=sort_direction,
         limit=limit,
@@ -165,7 +168,7 @@ async def create_story(
     db: AsyncSession = Depends(get_db_session),
     title: str = Form(...),
     description: str = Form(...),
-    content: str = Form(...),
+    content: str = Form(...),  # Will be JSON string of pages array
     category: str = Form(...),
     is_interactive: bool = Form(True),
     age_group: str = Form("all"),
@@ -174,14 +177,36 @@ async def create_story(
 ):
     """
     bireysel form alanlarıyla yeni bir hikaye oluştur.
+    content alanı, sayfaların JSON dizisi olarak gelmelidir:
+    [{"text": "Metin", "image": "URL"}, {"text": "Sadece metin"}, {"image": "Sadece görsel URL"}]
     """
     try:
         tag_list = [tag.strip() for tag in tags.split(',')] if tags else []
         
+        # Parse content as JSON array of pages
+        try:
+            pages_content = json.loads(content)
+            # Validate that it's an array of page objects
+            if not isinstance(pages_content, list):
+                raise ValueError("Content must be a JSON array of page objects")
+            
+            # Create Page objects from the JSON
+            pages = []
+            for page in pages_content:
+                pages.append(Page(
+                    text=page.get("text"),
+                    image=page.get("image")
+                ))
+        except json.JSONDecodeError:
+            raise HTTPException(
+                status_code=400,
+                detail="Content must be a valid JSON array"
+            )
+        
         story_data = {
             "title": title,
             "description": description,
-            "content": content,
+            "content": pages,  # Now a list of Page objects
             "category": category,
             "is_interactive": is_interactive,
             "age_group": age_group,
@@ -197,6 +222,8 @@ async def create_story(
             
         return await create_new_story(db, story_obj, current_user.id)
     
+    except HTTPException as http_ex:
+        raise http_ex
     except Exception as e:
         raise HTTPException(
             status_code=500,

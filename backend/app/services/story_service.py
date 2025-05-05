@@ -3,8 +3,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import func, desc, asc
 from sqlalchemy.orm import selectinload
+import json
 
-from app.models import OrmStory, OrmTag, OrmUser
+from app.models import OrmStory, OrmTag, OrmUser, Page
 
 async def get_story_by_id(
     story_id: int, 
@@ -29,6 +30,18 @@ async def get_story_by_id(
     
     if not story:
         raise HTTPException(status_code=404, detail="Story not found")
+    
+    if story:
+        # Deserialize content JSON
+        if story.content:
+            try:
+                content_data = json.loads(story.content)
+                story.content = [Page(**page) for page in content_data]
+            except (json.JSONDecodeError, TypeError):
+                story.content = [Page(text=story.content)]
+        else:
+            story.content = []
+            
     return story
 
 async def get_stories_with_filter(
@@ -59,11 +72,13 @@ async def get_stories_with_filter(
 
 async def create_new_story(db: AsyncSession, story_data, author_id: int):
     """Create a new story with associated tags"""
+    content_json = json.dumps([page.dict(exclude_none=True) for page in story_data.content])
+    
     new_story = OrmStory(
         title=story_data.title,
         image=story_data.image,
         description=story_data.description,
-        content=story_data.content,
+        content=content_json,  # Store as JSON string
         category=story_data.category,
         is_interactive=story_data.is_interactive,
         age_group=story_data.age_group,
@@ -100,6 +115,17 @@ async def create_new_story(db: AsyncSession, story_data, author_id: int):
         .where(OrmStory.id == new_story.id)
     )
     loaded_story = result.scalar_one()
+    
+    # Convert JSON
+    if loaded_story.content:
+        try:
+            content_data = json.loads(loaded_story.content)
+            loaded_story.content = [Page(**page) for page in content_data]
+        except (json.JSONDecodeError, TypeError):
+            # Handle legacy content or invalid JSON
+            loaded_story.content = [Page(text=loaded_story.content)]
+    else:
+        loaded_story.content = []
     
     return loaded_story
 
@@ -160,12 +186,12 @@ async def process_story_like(db: AsyncSession, story_id: int, user_id: int):
         raise HTTPException(status_code=404, detail="User not found")
 
     if user_in_liked_by:
-        # If already liked, remove like (toggle off)
+        # zaten like varsa, kaldır (toggle off)
         story.liked_by = [user for user in story.liked_by if user.id != user_id]
     else:
-        # Add like
+        # like ekle
         story.liked_by.append(current_user)
-        # If previously disliked, remove dislike
+        # eğer disliked ise, dislike'i kaldır
         if user_in_disliked_by:
             story.disliked_by = [user for user in story.disliked_by if user.id != user_id]
 
@@ -223,9 +249,7 @@ async def process_story_dislike(db: AsyncSession, story_id: int, user_id: int):
     result = await db.execute(
         select(OrmStory)
         .options(
-            selectinload(OrmStory.tags), 
-            selectinload(OrmStory.author), 
-            selectinload(OrmStory.liked_by),
+            selectinload(OrmStory.tags), selectinload(OrmStory.author), selectinload(OrmStory.liked_by),
             selectinload(OrmStory.disliked_by) 
         )
         .where(OrmStory.id == story_id)
@@ -241,8 +265,16 @@ async def increment_story_read_count(db: AsyncSession, story_id: int):
     """Increment story read count and return the updated story"""
     story = await get_story_by_id(story_id, db)
     
+    # eğer list ise JSON string'e çevir
+    if isinstance(story.content, list):
+        story.content = json.dumps([
+            page.dict(exclude_none=True) if hasattr(page, "dict") else page 
+            for page in story.content
+        ])
+    
     story.read_count += 1
     await db.commit()
+    
     
     result = await db.execute(
         select(OrmStory)
@@ -253,5 +285,15 @@ async def increment_story_read_count(db: AsyncSession, story_id: int):
     
     if not loaded_story:
         raise HTTPException(status_code=404, detail="Story not found after update")
+    
+    # Deserialize JSON
+    if loaded_story.content:
+        try:
+            content_data = json.loads(loaded_story.content)
+            loaded_story.content = [Page(**page) for page in content_data]
+        except (json.JSONDecodeError, TypeError):
+            loaded_story.content = [Page(text=loaded_story.content)]
+    else:
+        loaded_story.content = []
     
     return loaded_story

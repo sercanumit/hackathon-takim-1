@@ -4,7 +4,7 @@ from app.models.token import Token, TokenData
 from app.models.story import (
     OrmStory, OrmTag, TagBase, Tag,
     StoryBase, StoryCreate, StoryList, StoryDetail,
-    StoriesResponse, AuthorInfo
+    StoriesResponse, AuthorInfo, Page
 )
 
 __all__ = [
@@ -24,5 +24,6 @@ __all__ = [
     "StoryList",
     "StoryDetail",
     "StoriesResponse",
-    "AuthorInfo"
+    "AuthorInfo",
+    "Page"
 ]
