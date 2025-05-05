@@ -1,8 +1,11 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
 from app.routers import auth, stories
-from app.core.database import engine, metadata  
+from app.core.database import engine, metadata
+import os
+from pathlib import Path
 
 # Define the lifespan context manager
 @asynccontextmanager
@@ -30,6 +33,14 @@ app = FastAPI(
     version="0.0.1",
     lifespan=lifespan
 )
+
+# Create the uploads directory if it doesn't exist
+uploads_dir = Path(__file__).parent / "uploads"
+if not uploads_dir.exists():
+    uploads_dir.mkdir(parents=True)
+
+# Mount the uploads directory to serve files statically
+app.mount("/uploads", StaticFiles(directory=str(uploads_dir)), name="uploads")
 
 app.include_router(auth.router)
 app.include_router(stories.router)

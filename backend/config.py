@@ -20,3 +20,6 @@ class Config:
                               "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(32)))
     JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", 30))
+
+    # image file extensions
+    ALLOWED_IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif'}
