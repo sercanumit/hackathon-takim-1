@@ -168,6 +168,41 @@ function StoryGalleryPage() {
               </motion.button>
             </Link>
           </motion.div>
+
+          {/* AI Generate Story Button */}
+          <motion.div
+            className="mt-4"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+          >
+            <Link to="/stories/ai-generate">
+              <motion.button
+                className="px-8 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 hover:cursor-pointer hover:from-indigo-600 hover:to-purple-700 text-white rounded-full font-medium shadow-lg flex items-center mx-auto"
+                whileHover={{
+                  scale: 1.05,
+                  boxShadow:
+                    "0 10px 25px -5px rgba(99, 102, 241, 0.4), 0 10px 10px -5px rgba(139, 92, 246, 0.3)",
+                }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 mr-2"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M13.6 13.47A7 7 0 0 0 15 10a7 7 0 0 0-7-7 7 7 0 0 0-5 11.95V16h2v-2h2v-2h2v-2h1.7a7.001 7.001 0 0 0 .3-1.53zM7 9a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                AI ile Hikaye Oluştur
+                <span className="ml-2 animate-pulse text-yellow-200">✨</span>
+              </motion.button>
+            </Link>
+          </motion.div>
         </div>
 
         {/* Featured Stories Section */}

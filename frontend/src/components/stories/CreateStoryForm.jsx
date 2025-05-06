@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import storyService from "../../api/storyService";
 import PageEditor from "./PageEditor";
 
@@ -99,30 +100,49 @@ const CreateStoryForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const validationErrors = validate();
+
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
-      toast.error("Lütfen form hatalarını düzeltin");
+      toast.error("Lütfen form hatalarını düzeltin", {
+        position: "bottom-center",
+        autoClose: 3000,
+      });
       return;
     }
 
     try {
       setLoading(true);
-      toast.info("Hikaye verileri hazırlanıyor...");
+      toast.info("Hikaye verileri hazırlanıyor...", {
+        position: "bottom-center",
+        autoClose: 2000,
+      });
 
       // Step 2: Upload Content Images and Update Content Array (Remains the same)
-      toast.info("Hikaye içeriğindeki görseller işleniyor...");
+      toast.info("Hikaye içeriğindeki görseller işleniyor...", {
+        position: "bottom-center",
+        autoClose: 2000,
+      });
       const processedContent = await Promise.all(
         formData.content.map(async (page, index) => {
           const processedPage = { ...page };
           if (page.image && typeof page.image !== "string") {
             try {
-              toast.info(`Sayfa ${index + 1} görseli yükleniyor...`);
+              toast.info(`Sayfa ${index + 1} görseli yükleniyor...`, {
+                position: "bottom-center",
+                autoClose: 2000,
+              });
               const imageResponse = await storyService.uploadImage(page.image);
               processedPage.image = imageResponse.data.file_path;
-              toast.success(`Sayfa ${index + 1} görseli yüklendi.`);
+              toast.success(`Sayfa ${index + 1} görseli yüklendi.`, {
+                position: "bottom-center",
+                autoClose: 2000,
+              });
             } catch (err) {
               console.error(`Sayfa ${index + 1} görseli yükleme hatası:`, err);
-              toast.error(`Sayfa ${index + 1} görseli yüklenemedi.`);
+              toast.error(`Sayfa ${index + 1} görseli yüklenemedi.`, {
+                position: "bottom-center",
+                autoClose: 3000,
+              });
               processedPage.image = null;
             }
           }
@@ -139,11 +159,17 @@ const CreateStoryForm = () => {
       };
 
       // Step 4: Create the story using the /api/stories/ endpoint
-      toast.info("Hikaye oluşturuluyor...");
+      toast.info("Hikaye oluşturuluyor...", {
+        position: "bottom-center",
+        autoClose: 2000,
+      });
       // storyService.createStory will now handle the File object for the cover image
       const response = await storyService.createStory(storyDataToSend);
 
-      toast.success("Hikaye başarıyla oluşturuldu!");
+      toast.success("Hikaye başarıyla oluşturuldu!", {
+        position: "bottom-center",
+        autoClose: 5000,
+      });
       navigate(`/stories/${response.data.id}`);
     } catch (error) {
       console.error("Hikaye oluşturma hatası:", error);
@@ -158,11 +184,18 @@ const CreateStoryForm = () => {
         errorDetails.forEach((err) => {
           errorMsg += ` ${err.loc.join(".")}: ${err.msg};`;
         });
-        toast.error(errorMsg);
+        toast.error(errorMsg, {
+          position: "bottom-center",
+          autoClose: 5000,
+        });
       } else {
         toast.error(
           error.message ||
-            "Hikaye oluşturulurken bir hata oluştu. Lütfen tekrar deneyin."
+            "Hikaye oluşturulurken bir hata oluştu. Lütfen tekrar deneyin.",
+          {
+            position: "bottom-center",
+            autoClose: 5000,
+          }
         );
       }
     } finally {
@@ -177,6 +210,7 @@ const CreateStoryForm = () => {
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.3 }}
     >
+      <ToastContainer />
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Başlık */}

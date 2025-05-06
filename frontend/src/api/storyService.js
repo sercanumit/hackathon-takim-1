@@ -161,6 +161,19 @@ const storyService = {
   deleteStory: async (storyId) => {
     return await apiClient.delete(`/api/stories/${storyId}`);
   },
+
+  /**
+   * Generate a story using AI
+   * @param {string} userPrompt - The user's prompt for story generation
+   * @param {string} category - The category of the story
+   * @returns {Promise} - Promise with API response
+   */
+  generateAIStory: async (userPrompt, category) => {
+    return await apiClient.post("/api/stories/ai-generate", {
+      user_prompt: userPrompt,
+      category: category,
+    });
+  },
 };
 
 export default storyService;

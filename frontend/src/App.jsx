@@ -18,6 +18,7 @@ import PopularStoriesPage from "./pages/PopularStoriesPage";
 import NewStoriesPage from "./pages/NewStoriesPage";
 import CreateStoryPage from "./pages/CreateStoryPage";
 import StoryFullPage from "./pages/StoryFullPage";
+import AIStoryGenerationPage from "./pages/AIStoryGenerationPage";
 
 // Helper component to conditionally render Navbar
 const NavbarWrapper = ({
@@ -152,6 +153,25 @@ function App() {
             }
           />
           <Route path="/stories/:id" element={<StoryFullPage />} />
+          <Route
+            path="/stories/ai-generate"
+            element={
+              <>
+                <Navbar
+                  theme={theme}
+                  toggleTheme={toggleTheme}
+                  isAuthenticated={isAuthenticated}
+                  logout={logout}
+                  user={user}
+                  mobileMenuOpen={mobileMenuOpen}
+                  setMobileMenuOpen={setMobileMenuOpen}
+                />
+                <ProtectedRoute>
+                  <AIStoryGenerationPage />
+                </ProtectedRoute>
+              </>
+            }
+          />
           <Route
             path="/register"
             element={
