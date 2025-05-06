@@ -6,6 +6,7 @@ from app.models.story import (
     StoryBase, StoryCreate, StoryList, StoryDetail,
     StoriesResponse, AuthorInfo, Page
 )
+from app.models.ai_story import AIStoryRequest, AIStoryOutput, AIPageContent
 
 __all__ = [
     "Base",
@@ -25,5 +26,8 @@ __all__ = [
     "StoryDetail",
     "StoriesResponse",
     "AuthorInfo",
-    "Page"
+    "Page",
+    "AIStoryRequest",
+    "AIStoryOutput",
+    "AIPageContent"
 ]

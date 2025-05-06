@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware # Import CORSMiddleware
 from app.routers import auth, stories
 from app.core.database import engine, metadata
 import os
@@ -32,6 +33,15 @@ app = FastAPI(
     description="Çocukların kararlarına göre eğitici hikayeler oluşturma uygulaması",
     version="0.0.1",
     lifespan=lifespan
+)
+
+# CORS Middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"], # Allows all methods
+    allow_headers=["*"], # Allows all headers
 )
 
 # Create the uploads directory if it doesn't exist

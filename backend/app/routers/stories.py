@@ -18,11 +18,16 @@ from app.services.story_service import (
     increment_story_read_count
 )
 from app.utils.file_utils import save_upload_file
+from app.routers.story_routes import ai_story # Added ai_story router
 
 router = APIRouter(
     prefix="/api/stories",
     tags=["stories"]
 )
+
+# Include the AI story generation router
+router.include_router(ai_story.router, prefix="", tags=["ai-stories"])
+
 
 @router.post("/upload-image", status_code=status.HTTP_201_CREATED)
 async def upload_story_image(

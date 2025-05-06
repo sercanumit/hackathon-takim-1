@@ -23,3 +23,6 @@ class Config:
 
     # image file extensions
     ALLOWED_IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif'}
+
+    # Google API Key for Gemini
+    GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")

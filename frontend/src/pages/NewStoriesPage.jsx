@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import apiClient from "../api/apiClient";
 import StoryCard from "../components/cards/StoryCard";
 import SkeletonCard from "../components/cards/SkeletonCard";
+import React, { useMemo } from "react";
 
 function NewStoriesPage() {
   const [stories, setStories] = useState([]);
@@ -30,15 +31,21 @@ function NewStoriesPage() {
     fetchNewStories();
   }, []);
 
-  const categories = [
-    "all",
-    ...new Set(stories.map((story) => story.category).filter(Boolean)),
-  ];
+  const categories = useMemo(
+    () => [
+      "all",
+      ...new Set(stories.map((story) => story.category).filter(Boolean)),
+    ],
+    [stories]
+  );
 
-  const filteredStories =
-    selectedCategory === "all"
-      ? stories
-      : stories.filter((story) => story.category === selectedCategory);
+  const filteredStories = useMemo(
+    () =>
+      selectedCategory === "all"
+        ? stories
+        : stories.filter((story) => story.category === selectedCategory),
+    [stories, selectedCategory]
+  );
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -237,12 +244,12 @@ function NewStoriesPage() {
                             whileHover={{ scale: 1.03 }}
                             whileTap={{ scale: 0.97 }}
                           >
-                            <a
-                              href={`/stories/${filteredStories[0].id}`}
+                            <Link
+                              to={`/stories/${filteredStories[0].id}`}
                               className="inline-block bg-gradient-to-r from-green-500 to-teal-400 text-white font-medium px-6 py-3 rounded-lg hover:shadow-lg transition-shadow"
                             >
                               Hikayeyi Oku →
-                            </a>
+                            </Link>
                           </motion.div>
                         </div>
                       </div>

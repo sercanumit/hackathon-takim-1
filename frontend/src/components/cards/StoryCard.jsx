@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { useCallback } from "react";
+import { useCallback, memo } from "react";
 import apiClient from "../../api/apiClient";
 
 // Get the base URL from the apiClient for image paths
@@ -46,7 +46,7 @@ const getCompleteImageUrl = (imagePath) => {
   return `${BASE_URL}${imagePath.startsWith("/") ? "" : "/"}${imagePath}`;
 };
 
-const StoryCard = ({ story, featured = false }) => {
+const StoryCard = memo(({ story, featured = false }) => {
   if (!story) {
     return <div className="border border-red-500 p-4">Hikaye verisi yok!</div>;
   }
@@ -155,6 +155,6 @@ const StoryCard = ({ story, featured = false }) => {
       </div>
     </motion.div>
   );
-};
+});
 
 export default StoryCard;
