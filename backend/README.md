@@ -1,4 +1,4 @@
-# backend
+# Hikaye Uygulaması - Backend
 
 ## Kurulum
 
@@ -10,8 +10,6 @@
 
    # Windows için:
    # venv\Scripts\activate
-
-
    ```
 
 2. **Bağımlılıklar:**
@@ -22,7 +20,7 @@
 
 3. **.env dosyası**
 
-   `.env.example` dosyasını kopyalayarak `.env` adında yeni bir dosya oluşturun ve gerekli ortam değişkenlerini (örneğin, `JWT_SECRET_KEY`) ayarlayın.
+   `.env.example` dosyasını kopyalayarak `.env` adında yeni bir dosya oluşturun ve gerekli ortam değişkenlerini ayarlayın.
 
    ```bash
    cp .env.example .env
@@ -34,3 +32,5 @@
 ```bash
 uvicorn main:app --reload
 ```
+
+API varsayılan olarak `http://localhost:8000` adresinde çalışacaktır.
