@@ -10,7 +10,6 @@
 | Zeynep Ravza DURSUN  |
 | İsim Soyisim         |
 | İsim Soyisim         |
-| İsim Soyisim         |
 
 ## Başlangıç
 
