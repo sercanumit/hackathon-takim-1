@@ -4,13 +4,13 @@
 
 ## Takım Üyeleri
 
-| Ad Soyad         |
-| ---------------- |
-| Sercan Ümit ÖNER |
-| İsim Soyisim     |
-| İsim Soyisim     |
-| İsim Soyisim     |
-| İsim Soyisim     |
+| Ad Soyad             |
+| ----------------     |
+| Sercan Ümit ÖNER     |
+| Zeynep Ravza DURSUN  |
+| İsim Soyisim         |
+| İsim Soyisim         |
+| İsim Soyisim         |
 
 ## Başlangıç
 
