@@ -4,12 +4,13 @@
 
 ## Takım Üyeleri
 
-| Ad Soyad             |
-| ----------------     |
-| Sercan Ümit ÖNER      |
-| Zeynep Ravza DURSUN  |
-| Aybüke BOZKURT           |
-| Ali Nebi ER        |
+| Ad Soyad            |
+| ------------------- |
+| Sercan Ümit ÖNER    |
+| Zeynep Ravza DURSUN |
+| Aybüke BOZKURT      |
+| Ali Nebi ER         |
+| Süveyda Ezgi ŞAN    |
 
 ## Başlangıç
 
