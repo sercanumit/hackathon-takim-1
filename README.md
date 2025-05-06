@@ -9,8 +9,7 @@
 | Sercan Ümit ÖNER      |
 | Zeynep Ravza DURSUN  |
 | Aybüke BOZKURT           |
-| İsim Soyisim         |
-| İsim Soyisim         |
+| Ali Nebi ER        |
 
 ## Başlangıç
 
