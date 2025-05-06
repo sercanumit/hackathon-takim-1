@@ -6,9 +6,9 @@
 
 | Ad Soyad             |
 | ----------------     |
-| Sercan Ümit ÖNER     |
+| Sercan Ümit ÖNER      |
 | Zeynep Ravza DURSUN  |
-| İsim Soyisim         |
+| Aybüke BOZKURT           |
 | İsim Soyisim         |
 | İsim Soyisim         |
 
