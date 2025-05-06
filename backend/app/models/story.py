@@ -1,6 +1,8 @@
 from datetime import datetime, timezone
 from typing import List, Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
+import json
+import logging # For potential logging in validator
 from sqlalchemy import String, Integer, Boolean, ForeignKey, Table, Column
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -81,6 +83,8 @@ class OrmStory(Base):
         back_populates="disliked_stories"
     )
 
+logger = logging.getLogger(__name__) # Define logger for use in validator
+
 # --- Pydantic Models ---
 
 # New Page model for structured content
@@ -137,6 +141,43 @@ class StoryDetail(StoryList):
     is_interactive: bool
     age_group: str
     tags: List[Tag] = []
+
+    @field_validator('content', mode='before')
+    @classmethod
+    def deserialize_content_from_json_string(cls, v: any) -> List[dict]:
+        if isinstance(v, str):
+            if not v:  # Handle empty string as empty list
+                return []
+            try:
+                data = json.loads(v)
+                if not isinstance(data, list):
+                    logger.warning(f"Story content from DB is not a list: {type(data)}. Value: {v[:100]}")
+                    # Decide handling: raise error or attempt to adapt.
+                    # For StoryDetail, a list of pages is expected.
+                    # If it's a single string not in a list, it's an error for StoryDetail.
+                    # The original code in service would wrap it: [Page(text=str(data))]
+                    # For a validator, it's cleaner to expect the correct format or fail.
+                    raise ValueError("Content JSON from DB must be a list of page objects.")
+                
+                # Pydantic will then validate each item in the list against the Page model.
+                return data # Return the list of dicts for Pydantic to process
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to decode story content JSON: {e}. Value: {v[:100]}")
+                raise ValueError(f"Invalid JSON in content field: {e}")
+        elif isinstance(v, list):
+            # If it's already a list (e.g., from internal model creation or tests), pass through.
+            return v
+        
+        # If v is None or other unexpected types, Pydantic will handle the type error,
+        # or we can raise a specific error here.
+        if v is None:
+            return [] # Treat None content as empty list
+            
+        logger.warning(f"Unexpected type for content field: {type(v)}. Expected str (JSON) or list.")
+        # Let Pydantic attempt to validate or fail for other types.
+        # Raising a ValueError here might be more explicit.
+        raise ValueError(f"Content must be a JSON string or a list of page objects, got {type(v)}")
+
 
 class StoriesResponse(BaseModel):
     total: int

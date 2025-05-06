@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
+import apiClient from "../api/apiClient";
 import StoryCard from "../components/cards/StoryCard";
 import SkeletonCard from "../components/cards/SkeletonCard";
-import apiClient from "../api/apiClient";
 
 function NewStoriesPage() {
   const [stories, setStories] = useState([]);
@@ -73,6 +74,32 @@ function NewStoriesPage() {
     );
   }
 
+  // Get the base URL from your API client
+  const API_BASE_URL = apiClient.defaults.baseURL || window.location.origin;
+
+  // Helper function to properly construct image URLs
+  const getImageUrl = (imagePath) => {
+    if (!imagePath)
+      return "https://placehold.co/800x600/2f9e44/FFFFFF/png?text=Yeni+Hikaye";
+
+    // If the path already starts with http or https, it's already a complete URL
+    if (imagePath.startsWith("http")) return imagePath;
+
+    // For paths that start with /uploads/, we need to ensure we're using the API base URL
+    if (imagePath.startsWith("/uploads/")) {
+      // Remove the baseURL's trailing slash if present
+      const baseUrl = API_BASE_URL.endsWith("/")
+        ? API_BASE_URL.slice(0, -1)
+        : API_BASE_URL;
+      return `${baseUrl}${imagePath}`;
+    }
+
+    // For other relative paths
+    return `${window.location.origin}${
+      imagePath.startsWith("/") ? "" : "/"
+    }${imagePath}`;
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Kategori Filtresi */}
@@ -131,12 +158,18 @@ function NewStoriesPage() {
                         <div className="md:w-1/2">
                           <div className="relative h-64 md:h-full">
                             <img
-                              src={
-                                filteredStories[0].image ||
-                                "https://placehold.co/800x600/2f9e44/FFFFFF/png?text=Yeni+Hikaye"
-                              }
+                              src={getImageUrl(filteredStories[0].image)}
                               alt={filteredStories[0].title}
                               className="w-full h-full object-cover"
+                              onError={(e) => {
+                                console.error(
+                                  "Image failed to load:",
+                                  e.target.src
+                                );
+                                e.target.onerror = null; // Prevent infinite error loop
+                                e.target.src =
+                                  "https://placehold.co/800x600/2f9e44/FFFFFF/png?text=Yeni+Hikaye";
+                              }}
                             />
                             <div className="absolute top-4 left-4 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center">
                               <span className="animate-pulse mr-1">●</span> YENİ

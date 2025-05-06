@@ -35,36 +35,6 @@ async def get_story_by_id(
     
     if not story:
         raise HTTPException(status_code=404, detail="Story not found")
-    
-    if story:
-        # Deserialize content JSON
-        if story.content:
-            try:
-                content_data = json.loads(story.content)
-                if isinstance(content_data, list):
-                    deserialized_pages = []
-                    for page_dict in content_data:
-                        try:
-                            # Ensure page_dict is a dictionary before attempting ** unpacking
-                            if isinstance(page_dict, dict):
-                                deserialized_pages.append(Page(**page_dict))
-                            else:
-                                logger.warning(f"Skipping invalid page data (not a dict) in story {story.id}: {page_dict}")
-                                # Optionally append a default/error page or skip
-                        except TypeError as page_err:
-                            logger.error(f"Error deserializing page data in story {story.id}: {page_err} - Data: {page_dict}")
-                            # Optionally append a default/error page
-                    story.content = deserialized_pages
-                else:
-                    # Handle case where content is a single string (legacy or error)
-                    logger.warning(f"Story {story.id} content is not a list, treating as single text page: {story.content}")
-                    story.content = [Page(text=str(content_data))]
-            except (json.JSONDecodeError, TypeError) as e:
-                logger.error(f"Error decoding story content for story {story.id}: {e} - Content: {story.content}")
-                # Fallback to prevent crashes, maybe show raw content or an error message
-                story.content = [Page(text="Error loading content")]
-        else:
-            story.content = []
             
     return story
 
@@ -159,29 +129,30 @@ async def create_new_story(db: AsyncSession, story_data, author_id: int):
          # This shouldn't happen if commit succeeded, but handle defensively
          raise HTTPException(status_code=404, detail="Story not found after creation commit")
 
-    # Deserialize content for the response model
-    if loaded_story.content:
-        try:
-            content_data = json.loads(loaded_story.content)
-            if isinstance(content_data, list):
-                 deserialized_pages = []
-                 for page_dict in content_data:
-                     try:
-                         if isinstance(page_dict, dict):
-                             deserialized_pages.append(Page(**page_dict))
-                         else:
-                             logger.warning(f"Skipping invalid page data (not a dict) post-creation in story {loaded_story.id}: {page_dict}")
-                     except TypeError as page_err:
-                         logger.error(f"Error deserializing page data post-creation in story {loaded_story.id}: {page_err} - Data: {page_dict}")
-                 loaded_story.content = deserialized_pages
-            else:
-                 logger.warning(f"Story {loaded_story.id} content (post-creation) is not a list: {loaded_story.content}")
-                 loaded_story.content = [Page(text=str(content_data))]
-        except (json.JSONDecodeError, TypeError) as e:
-            logger.error(f"Error decoding story content after creation for story {loaded_story.id}: {e}")
-            loaded_story.content = [Page(text="Error loading content")]
-    else:
-        loaded_story.content = []
+    # Content deserialization for the response model is now handled by Pydantic StoryDetail model
+    # No need for manual deserialization here.
+    # if loaded_story.content:
+    #     try:
+    #         content_data = json.loads(loaded_story.content)
+    #         if isinstance(content_data, list):
+    #              deserialized_pages = []
+    #              for page_dict in content_data:
+    #                  try:
+    #                      if isinstance(page_dict, dict):
+    #                          deserialized_pages.append(Page(**page_dict))
+    #                      else:
+    #                          logger.warning(f"Skipping invalid page data (not a dict) post-creation in story {loaded_story.id}: {page_dict}")
+    #                  except TypeError as page_err:
+    #                      logger.error(f"Error deserializing page data post-creation in story {loaded_story.id}: {page_err} - Data: {page_dict}")
+    #              loaded_story.content = deserialized_pages
+    #         else:
+    #              logger.warning(f"Story {loaded_story.id} content (post-creation) is not a list: {loaded_story.content}")
+    #              loaded_story.content = [Page(text=str(content_data))]
+    #     except (json.JSONDecodeError, TypeError) as e:
+    #         logger.error(f"Error decoding story content after creation for story {loaded_story.id}: {e}")
+    #         loaded_story.content = [Page(text="Error loading content")]
+    # else:
+    #     loaded_story.content = []
 
     return loaded_story
 
@@ -338,28 +309,29 @@ async def increment_story_read_count(db: AsyncSession, story_id: int):
     # Refresh is likely not needed as we eager loaded, but can be kept for safety
     # await db.refresh(story, ['tags', 'author']) # Re-fetches data
 
-    # Deserialize content
-    if story.content:
-        try:
-            content_data = json.loads(story.content)
-            if isinstance(content_data, list):
-                deserialized_pages = []
-                for page_dict in content_data:
-                    try:
-                        if isinstance(page_dict, dict):
-                            deserialized_pages.append(Page(**page_dict))
-                        else:
-                            logger.warning(f"Skipping invalid page data (not a dict) after read increment in story {story.id}: {page_dict}")
-                    except TypeError as page_err:
-                        logger.error(f"Error deserializing page data after read increment in story {story.id}: {page_err} - Data: {page_dict}")
-                story.content = deserialized_pages
-            else:
-                logger.warning(f"Story {story.id} content (after read increment) is not a list: {story.content}")
-                story.content = [Page(text=str(content_data))]
-        except (json.JSONDecodeError, TypeError) as e:
-            logger.error(f"Error decoding story content after incrementing read count for story {story.id}: {e}")
-            story.content = [Page(text="Error loading content")]
-    else:
-        story.content = []
+    # Content deserialization for the response model is now handled by Pydantic StoryDetail model
+    # No need for manual deserialization here.
+    # if story.content:
+    #     try:
+    #         content_data = json.loads(story.content)
+    #         if isinstance(content_data, list):
+    #             deserialized_pages = []
+    #             for page_dict in content_data:
+    #                 try:
+    #                     if isinstance(page_dict, dict):
+    #                         deserialized_pages.append(Page(**page_dict))
+    #                     else:
+    #                         logger.warning(f"Skipping invalid page data (not a dict) after read increment in story {story.id}: {page_dict}")
+    #                 except TypeError as page_err:
+    #                     logger.error(f"Error deserializing page data after read increment in story {story.id}: {page_err} - Data: {page_dict}")
+    #             story.content = deserialized_pages
+    #         else:
+    #             logger.warning(f"Story {story.id} content (after read increment) is not a list: {story.content}")
+    #             story.content = [Page(text=str(content_data))]
+    #     except (json.JSONDecodeError, TypeError) as e:
+    #         logger.error(f"Error decoding story content after incrementing read count for story {story.id}: {e}")
+    #         story.content = [Page(text="Error loading content")]
+    # else:
+    #     story.content = []
 
     return story
